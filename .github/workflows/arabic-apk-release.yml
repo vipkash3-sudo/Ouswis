@@ -1,0 +1,58 @@
+name: Arabic APK release
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/arabic-apk-release.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install Android SDK
+        shell: bash
+        run: |
+          set +o pipefail
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$RUNNER_TEMP/sdk" \
+            "build-tools;34.0.0" "platforms;android-34" > /dev/null
+          echo "ANDROID_HOME=$RUNNER_TEMP/sdk" >> "$GITHUB_ENV"
+
+      - name: Check Arabic translation
+        run: |
+          python3 tools/translate.py --check
+          node tests/ArabicI18nTest.js
+
+      - name: Build APK
+        run: |
+          ./build.sh --generic
+          bash tools/test-remote.sh
+          bash tools/test-order.sh
+
+      - name: Publish direct APK download
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: arabic-build-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          cp FreeMyTV.apk FreeMyTV-Arabic.apk
+          gh release create "$RELEASE_TAG" FreeMyTV-Arabic.apk \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "FreeMyTV Arabic - Android TV" \
+            --notes "Arabic test build for Android TV. Temporary signing key; future builds may not install as updates. Full RTL layout is not implemented." \
+            --prerelease \
+            --latest=false
+          echo "### Download APK" >> "$GITHUB_STEP_SUMMARY"
+          echo "https://github.com/$GITHUB_REPOSITORY/releases/download/$RELEASE_TAG/FreeMyTV-Arabic.apk" >> "$GITHUB_STEP_SUMMARY"
