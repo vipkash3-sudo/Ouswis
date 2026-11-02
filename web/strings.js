@@ -14,11 +14,11 @@ var I18N = (function () {
   var has = Object.prototype.hasOwnProperty;
 
   /** The usual country for each language's dates and numbers, when the TV itself is in another language. */
-  var REGIONS = {pt: 'BR', es: 'ES', de: 'DE', fr: 'FR', it: 'IT', nl: 'NL', pl: 'PL', sv: 'SE', da: 'DK', nb: 'NO',
+  var REGIONS = {ar: 'EG', pt: 'BR', es: 'ES', de: 'DE', fr: 'FR', it: 'IT', nl: 'NL', pl: 'PL', sv: 'SE', da: 'DK', nb: 'NO',
     fi: 'FI', cs: 'CZ', ro: 'RO', tr: 'TR', ru: 'RU', uk: 'UA', el: 'GR', ja: 'JP', ko: 'KR', hi: 'IN', id: 'ID', vi: 'VN', th: 'TH'};
 
   /** Each language in its own name, for TVs without Intl.DisplayNames (Chromium before 81). */
-  var NAMES = {en: 'English', pt: 'Português', es: 'Español', de: 'Deutsch', fr: 'Français', it: 'Italiano',
+  var NAMES = {ar: 'العربية', en: 'English', pt: 'Português', es: 'Español', de: 'Deutsch', fr: 'Français', it: 'Italiano',
     nl: 'Nederlands', pl: 'Polski', sv: 'Svenska', da: 'Dansk', nb: 'Norsk bokmål', fi: 'Suomi', cs: 'Čeština',
     ro: 'Română', tr: 'Türkçe', ru: 'Русский', uk: 'Українська', el: 'Ελληνικά', ja: '日本語', ko: '한국어',
     'zh-CN': '简体中文', 'zh-TW': '繁體中文', hi: 'हिन्दी', id: 'Indonesia', vi: 'Tiếng Việt', th: 'ไทย'};
@@ -28,6 +28,11 @@ var I18N = (function () {
    * languages whose catalogues use more than "one" and "other" need a rule; the rest are one for 1, else other.
    */
   var PLURALS = {
+    ar: function (n) {
+      var h = n % 100;
+      return n === 0 ? 'zero' : n === 1 ? 'one' : n === 2 ? 'two'
+        : h >= 3 && h <= 10 ? 'few' : h >= 11 && h <= 99 ? 'many' : 'other';
+    },
     ru: slavic,
     uk: slavic,
     pl: function (n) {
@@ -188,6 +193,7 @@ var I18N = (function () {
       var parts = new Intl.DateTimeFormat(loc, {hour: 'numeric', hour12: true}).formatToParts(d);
       for (var i = 0; i < parts.length; i++) if (parts[i].type === 'dayPeriod') return parts[i].value;
     } catch (e) { /* older Chromium: no formatToParts */ }
+    if (base(lang) === 'ar') return d.getHours() < 12 ? 'ص' : 'م';
     return d.getHours() < 12 ? 'AM' : 'PM';
   }
 
