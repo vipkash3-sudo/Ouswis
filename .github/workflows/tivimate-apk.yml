@@ -1,0 +1,86 @@
+name: TiviMate APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/tivimate-apk.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install Android SDK
+        shell: bash
+        run: |
+          set +o pipefail
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$RUNNER_TEMP/sdk" \
+            "build-tools;34.0.0" "platforms;android-34" > /dev/null
+          echo "ANDROID_HOME=$RUNNER_TEMP/sdk" >> "$GITHUB_ENV"
+
+      - name: Make Live TV open TiviMate
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path("app/src/io/freemytv/HomeApps.java")
+          text = path.read_text(encoding="utf-8")
+          anchor = (
+              "    static Intent liveTv(Context c) {\n"
+              "        PackageManager pm = c.getPackageManager();"
+          )
+          replacement = anchor + (
+              "\n        // Prefer TiviMate in this custom build.\n"
+              '        Intent tivimate = launchIntent(pm, "ar.tvplayer.tv");\n'
+              "        if (tivimate != null) return tivimate;"
+          )
+          if 'Intent tivimate = launchIntent(pm, "ar.tvplayer.tv");' not in text:
+              assert text.count(anchor) == 1, "Live TV method changed; review required"
+              path.write_text(
+                  text.replace(anchor, replacement, 1),
+                  encoding="utf-8"
+              )
+
+          path = Path("app/AndroidManifest.xml")
+          text = path.read_text(encoding="utf-8")
+          entry = '<package android:name="ar.tvplayer.tv" />'
+          if entry not in text:
+              assert text.count("<queries>") == 1
+              path.write_text(
+                  text.replace("<queries>", "<queries>\n        " + entry, 1),
+                  encoding="utf-8"
+              )
+
+      - name: Validate and build
+        run: |
+          python3 tools/translate.py --check
+          node tests/ArabicI18nTest.js
+          ./build.sh --generic
+          bash tools/test-remote.sh
+          bash tools/test-order.sh
+
+      - name: Publish APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: tivimate-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          cp FreeMyTV.apk FreeMyTV-Arabic-TiviMate.apk
+          gh release create "$RELEASE_TAG" FreeMyTV-Arabic-TiviMate.apk \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "FreeMyTV Arabic with TiviMate" \
+            --notes "Custom build: Live TV opens TiviMate (ar.tvplayer.tv). Temporary signing key; may not install over a previous build." \
+            --prerelease \
+            --latest=false
