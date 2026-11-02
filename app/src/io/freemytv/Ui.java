@@ -124,6 +124,7 @@ final class Ui {
     private static final Map<String, String> CONTEXT_FREE = new ConcurrentHashMap<>();
     /** The usual country for each language's dates and numbers, when the TV itself is in another language. */
     private static final String[][] REGIONS = {
+        {"ar", "EG"},
         {"pt", "BR"}, {"es", "ES"}, {"de", "DE"}, {"fr", "FR"}, {"it", "IT"}, {"nl", "NL"}, {"pl", "PL"}, {"sv", "SE"},
         {"da", "DK"}, {"nb", "NO"}, {"fi", "FI"}, {"cs", "CZ"}, {"ro", "RO"}, {"tr", "TR"}, {"ru", "RU"}, {"uk", "UA"},
         {"el", "GR"}, {"ja", "JP"}, {"ko", "KR"}, {"hi", "IN"}, {"id", "ID"}, {"vi", "VN"}, {"th", "TH"},
