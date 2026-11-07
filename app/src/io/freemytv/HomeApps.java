@@ -324,9 +324,7 @@ final class HomeApps {
     /** Live TV, the HDMI inputs with a device sending a signal, and All Apps. */
     static List<Item> shortcuts(Context c) {
         List<Item> items = new ArrayList<>();
-        if (liveTv(c) != null) {
-            items.add(shortcut(LIVE_TV, "live", Ui.tr("Live TV"), "tv"));
-        }
+        items.add(shortcut(LIVE_TV, "xtream_live", Ui.tr("Live TV"), "tv"));
         items.addAll(inputs(c));
         items.add(shortcut(ALL_APPS, "all", Ui.tr("All Apps"), "apps"));
         return items;
@@ -633,7 +631,7 @@ final class HomeApps {
                 }
                 break;
             case LIVE_TV:
-                intent = liveTv(a);
+                intent = "xtream_live".equals(it.key) ? new Intent(a, XtreamActivity.class) : liveTv(a);
                 break;
             case INPUT:
                 if (HomeMode.AMAZON && fireInput(a, it)) return true;
