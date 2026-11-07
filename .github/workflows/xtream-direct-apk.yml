@@ -1,0 +1,32 @@
+name: OUSWIS Xtream direct APK
+on:
+  push:
+    branches: [feature/ouswis-xtream-live]
+    paths:
+      - ".github/workflows/xtream-direct-apk.yml"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Install Android SDK
+        shell: bash
+        run: |
+          set +o pipefail
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$RUNNER_TEMP/sdk" "build-tools;34.0.0" "platforms;android-34" > /dev/null
+          echo "ANDROID_HOME=$RUNNER_TEMP/sdk" >> "$GITHUB_ENV"
+      - name: Build APK
+        run: ./build.sh --generic
+      - name: Publish direct APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp FreeMyTV.apk OUSWIS-Xtream-TV.apk
+          gh release create "ouswis-xtream-${{ github.run_id }}" OUSWIS-Xtream-TV.apk --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "OUSWIS Xtream TV test APK" --notes "Test APK. Signing may differ from installed version; do not uninstall your current app." --prerelease --latest=false
